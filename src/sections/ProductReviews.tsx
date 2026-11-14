@@ -161,6 +161,9 @@ export const ProductReviews: React.FC<{ product: Product }> = ({ product }) => {
 
   const pick = (k: FilterKey) => { setFilter(k); setVisible(PAGE); };
 
+  // Hidden until real reviews / ratings exist for this product (data/reviews.ts)
+  if (stats.count === 0 && !reviews.some((x) => x.product === product.name)) return null;
+
   const field = 'px-4 py-3 text-sm bg-bg border border-line rounded-brand focus:outline-none focus:border-ink';
 
   return (

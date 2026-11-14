@@ -201,7 +201,7 @@ export const Header: React.FC = () => {
         <div className="pt-6 border-t border-line flex flex-col gap-4">
           <AmazonButton size="lg" className="w-full text-center" />
           <p className="text-xs text-ink/60 text-center tracking-wide">
-            Prime 1-2 day delivery &amp; Subscribe &amp; Save available.
+            Launching soon on Amazon · Subscribe &amp; Save at launch.
           </p>
         </div>
       </div>

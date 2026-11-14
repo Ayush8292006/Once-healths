@@ -172,10 +172,21 @@ html.lenis, html.lenis body {
 }
 
 .hb-arch {
-  /* capsule-round top, original soft corners at the bottom */
-  border-radius: 999px 999px 28px 28px;
+  /* capsule-round top, soft corners at the bottom */
+  --arch-bottom: 28px;
+  border-radius: 999px 999px var(--arch-bottom) var(--arch-bottom);
   background: linear-gradient(172deg, #efc9db 0%, #dccfe8 45%, #b9d3e3 100%);
   box-shadow: 0 50px 70px -45px rgba(90, 50, 110, 0.5);
+}
+/* Inner hairline that follows the arch exactly (bottom radius = outer radius − inset) */
+.hb-arch-line {
+  border: 1px solid rgba(33, 29, 29, 0.14);
+  border-radius: 999px 999px calc(var(--arch-bottom) - 10px) calc(var(--arch-bottom) - 10px);
+}
+@media (min-width: 640px) {
+  .hb-arch-line {
+    border-radius: 999px 999px calc(var(--arch-bottom) - 12px) calc(var(--arch-bottom) - 12px);
+  }
 }
 
 /* Preloader backdrop: clean white-beige with a barely-there warm glow */

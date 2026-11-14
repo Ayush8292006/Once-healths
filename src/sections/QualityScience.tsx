@@ -2,31 +2,32 @@ import React, { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { CheckCircle2, ShieldAlert, Award } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const qualitySteps = [
   {
     step: '01',
-    title: 'ISO 17025 Third-Party Testing',
+    title: 'Third Party Tested',
     description:
-      'Every single batch of ONCE is sent to independent analytical laboratories. We verify exact label potencies and test for heavy metals (lead, arsenic, cadmium, mercury), microbiology, and pesticides.',
+      'ONCE is tested by an independent third-party laboratory. Every batch has its own Certificate of Analysis — enter the batch number from your bottle on our Verify Batch page to see it.',
     image: '/images/quality-testing.webp',
     icon: CheckCircle2,
   },
   {
     step: '02',
-    title: 'Precision Botanical Sourcing',
+    title: 'Globally Sourced Ingredients',
     description:
-      'We prioritize bioidentical, wildcrafted, and non-GMO sources—such as vegan Vitamin D3 sustainably harvested from wild lichen and microencapsulated natto K2.',
+      'Methylated B12 and folate, magnesium glycinate and botanical extracts are sourced from suppliers around the world, and every ingredient is listed on the label.',
     image: '/images/quality-sourcing.webp',
     icon: Award,
   },
   {
     step: '03',
-    title: 'cGMP Certified Manufacturing',
+    title: 'cGMP-Certified Facility',
     description:
-      'Formulated and packaged in state-of-the-art facilities in the United States, adhering stringently to FDA 21 CFR Part 111 current Good Manufacturing Practices.',
+      'Proudly manufactured in India in a cGMP-certified facility, following current Good Manufacturing Practices from raw material to sealed bottle.',
     image: '/images/quality-manufacturing.webp',
     icon: ShieldAlert,
   },
@@ -115,15 +116,21 @@ export const QualityScience: React.FC = () => {
               Quality you can trace.
             </h2>
             <p className="text-base text-ink-muted leading-relaxed mb-8">
-              We believe a supplement should never be an act of blind faith. Our supply chain is transparent, clean, and repeatedly audited before any capsule touches a customer's hands.
+              A supplement should never be an act of blind faith. Every ingredient and amount is printed on the label, and every batch can be checked against its own lab report.
             </p>
             <div className="p-6 bg-bg rounded-brand border border-line">
               <h4 className="text-sm font-heading font-bold text-ink mb-1.5">
-                Zero Proprietary Concealment
+                Check your batch
               </h4>
-              <p className="text-xs text-ink-muted leading-relaxed">
-                Every vitamin and chelated mineral is named by exact chemical entity. What you read on the label is what your cells absorb.
+              <p className="text-xs text-ink-muted leading-relaxed mb-3">
+                Enter the batch number from your bottle to view its Certificate of Analysis (COA) and claim report.
               </p>
+              <Link
+                to="/verify"
+                className="inline-flex items-center gap-1.5 text-xs font-heading font-semibold text-ink hover:text-brand-green transition-colors"
+              >
+                Verify your batch <span aria-hidden="true">→</span>
+              </Link>
             </div>
           </div>
 

@@ -67,10 +67,11 @@ const realReviews: Review[] = [
 /* ---------------------------------------------------------------------------
  * DEMO MODE — dummy reviews / ratings / sales so the design can be seen filled in.
  * These are NOT real customers. A "Demo data" badge is shown wherever they appear.
- * TODO client: before launch set DEMO_MODE = false (and paste real data above).
+ * DEMO_MODE = true only shows the dummy data for design previews (with a "Demo data" badge). Keep it false on the live site.
  * Never publish demo reviews as genuine — fake reviews are illegal in many countries (FTC, Amazon policy).
  * ------------------------------------------------------------------------- */
-export const DEMO_MODE = true;
+// Site not launched yet → nothing is shown. Paste real data above and it appears automatically.
+export const DEMO_MODE = false;
 const demoActive = DEMO_MODE && realReviews.length === 0;
 export const isDemoData = demoActive;
 

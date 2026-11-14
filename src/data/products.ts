@@ -1,9 +1,20 @@
 import { ASIN, amazonProductUrl, amazonCartUrl } from './amazon';
 
+/**
+ * PRODUCT DATA — taken word-for-word from the final packaging label (final_1.2.pdf).
+ * If the label changes, update this file only; every page reads from here.
+ */
+
 export interface SupplementFactRow {
   nutrient: string;
   amount: string;
   dailyValue: string;
+}
+
+export interface ProprietaryBlend {
+  name: string;
+  ingredients: string;
+  amount: string;
 }
 
 export interface IngredientSpotlight {
@@ -26,20 +37,24 @@ export interface Product {
   gallery: string[];
   amazonUrl: string; // product page on Amazon (set ASIN in data/amazon.ts)
   amazonCartUrl: string; // adds the product to the Amazon cart → checkout
-  price?: string;    // optional, hidden if empty
+  price?: string; // optional, hidden if empty
   capsules: number;
   supplyDays: number;
+  /** TODO client: real Amazon rating + review count. Stars are hidden while reviewCount is 0. */
   rating: number;
   reviewCount: number;
+  /** The three bullets printed on the front of the bottle */
   benefits: string[];
   detailedBenefits: {
     title: string;
     description: string;
   }[];
   ingredientSpotlights: IngredientSpotlight[];
-  // Supplement Facts label placeholder rows
-  // TODO client: client to supply exact supplement facts — do not invent dosages
+  servingSize: string;
+  servingsPerContainer: number;
   supplementFacts: SupplementFactRow[];
+  proprietaryBlends: ProprietaryBlend[];
+  otherIngredients: string;
   howToTake: {
     servingSize: string;
     timing: string;
@@ -50,26 +65,64 @@ export interface Product {
     question: string;
     answer: string;
   }[];
-  /** Round benefit badges shown on the right of the main product image */
+  /** Round benefit badge shown on the main product image (first item is used) */
   badges: string[];
-  /** "✦ Main Benefits / Is Good For / …" accordion under the buy buttons */
+  /** "Main Benefits / Is Good For / How to Take / …" accordion under the buy buttons */
   infoSections: {
     title: string;
-    items?: string[];      // rendered as bullets ("Title — text" bolds the title part)
+    items?: string[]; // rendered as bullets ("Title — text" bolds the title part)
     paragraphs?: string[]; // rendered as plain paragraphs
   }[];
-  /** % of reviews per star (5★ → 1★). TODO client: replace with real Amazon breakdown */
-  ratingBreakdown: [number, number, number, number, number];
 }
 
-export const products: Product[] = [
+/** Claims printed on the label — the ONLY quality / free-from claims used on the site */
+export const LABEL_CLAIMS = {
+  freeFrom: ['Gluten', 'Dairy'],
+  quality: ['Third party Tested', 'cGMP-Certified Facility'],
+  madeIn: 'Proudly manufactured in India using globally sourced ingredients.',
+} as const;
+
+export const LABEL_CAUTION =
+  'Do not exceed the recommended dose. Consult a healthcare professional before use if you are under 18, pregnant or breastfeeding, taking medication, or have a medical condition. Discontinue use and consult a healthcare professional if any adverse reaction occurs. Dietary supplements should not be used as a substitute for a varied, balanced diet and healthy lifestyle.';
+
+export const LABEL_STORAGE =
+  'Keep out of reach of children. Do not use if safety seal is damaged or missing. Store in a cool, dry place.';
+
+export const LABEL_SUGGESTED_USE =
+  'Adults: Take two (2) capsules daily with a meal, or as recommended by a healthcare professional. If you are sensitive, start with one (1) capsule daily with food.';
+
+export const DISTRIBUTOR = {
+  name: 'Once Health LLC',
+  address: ['30 N Gould St Ste R', 'Sheridan, WY 82801'],
+  email: 'support@oncehealth.co',
+} as const;
+
+// Shared blend (identical on both labels)
+const ANTIOXIDANT_BLEND: ProprietaryBlend = {
+  name: 'Antioxidant Fruit and Energy Proprietary Blend',
+  ingredients:
+    'Green Tea Extract (Camellia sinensis, Leaf), Hawthorn (Crataegus oxyacantha, Fruit), Cinnamon (Cinnamomum spp., Bark), Bilberry 4:1 Extract (Vaccinium myrtillus, Fruit), Grape Seed Extract (Vitis vinifera, Seed), Black Currant (Ribes nigrum, Fruit), Pomegranate 4:1 Extract (Punica granatum, Fruit)',
+  amount: '187 mg',
+};
+
+const howToTake = {
+  servingSize: '2 capsules daily',
+  timing: 'With a meal',
+  instructions: LABEL_SUGGESTED_USE,
+  storage: LABEL_STORAGE,
+};
+
+type BaseProduct = Omit<Product, 'badges' | 'infoSections'>;
+
+const baseProducts: BaseProduct[] = [
   {
     slug: 'womens-multi',
     name: "Women's Multi",
     gender: 'women',
     eyebrow: "WOMEN'S MULTI",
     tagline: 'Advanced Bioactive Formula',
-    description: 'A targeted daily multivitamin engineered for female cellular vitality, metabolic energy, and hormonal balance. Made with bioidentical methylated vitamins and gentle chelated magnesium.',
+    description:
+      "A daily multivitamin for women with 20 vitamins and minerals, methylated B12 and folate, magnesium glycinate, and a female support blend with wild yam, red clover and cranberry. Two capsules a day with a meal.",
     accent: 'var(--women)',
     accentHex: '#9C3D73',
     image: '/images/womens-multi.webp',
@@ -85,150 +138,127 @@ export const products: Product[] = [
     price: '', // optional, hidden if empty
     capsules: 60,
     supplyDays: 30,
-    rating: 4.9,
-    reviewCount: 148, // TODO client
-    ratingBreakdown: [88, 8, 3, 1, 0], // TODO client
-    badges: ['Energy & Vitality*', 'Hair, Skin & Nails*', 'Methylated B12 & Folate', 'Iron-Free & Gentle'],
-    infoSections: [
-      {
-        title: 'Main Benefits',
-        items: [
-          'Methylated Multivitamin for Women — Features bioavailable B vitamins: Folate as 5-MTHF, Vitamin B12 as methylcobalamin, and Vitamin B6 as P5P. Forms that your body can use directly, without having to convert them first.*',
-          'Stomach-Friendly Formula — Formulated without iron. Designed to be gentle when taken with food. If your stomach is sensitive, start with one capsule.*',
-          'Hair, Skin & Nails Support — With Biotin, Zinc, and Selenium — nutrients often included in beauty-focused formulas.*',
-          'Helps Fill Everyday Nutrient Gaps — A broad-spectrum blend of essential vitamins and minerals helps complement what smaller or less varied meals may miss.*',
-          'Year-Round Immune Resilience — Vitamin C, D3, Zinc and Selenium support your natural immune defences.*',
-        ],
-      },
-      {
-        title: 'Is Good For',
-        items: [
-          'Women looking for a once-daily foundation multivitamin',
-          'Busy routines where meals are smaller or less varied',
-          'Anyone who prefers methylated (active) B vitamins',
-          'Those who want an iron-free, gentle-on-the-stomach formula',
-        ],
-      },
-      {
-        title: 'How to Take',
-        paragraphs: [
-          'Take 2 capsules daily with your first meal of the day and a glass of water.',
-          'Fat-soluble nutrients (Vitamins A, D3, E, K2) absorb best alongside healthy fats such as avocado, yogurt, eggs or olive oil. If your stomach is sensitive, start with one capsule.',
-        ],
-      },
-      {
-        title: 'Ingredients',
-        paragraphs: [
-          'Vitamin A, Vitamin C, Vitamin D3, Vitamin E, Vitamin K2 (MK-7), Thiamin (B1), Riboflavin (B2), Niacin, Vitamin B6 (P5P), Folate (5-MTHF), Vitamin B12 (methylcobalamin), Biotin, Pantothenic Acid, Magnesium (bisglycinate), Zinc (bisglycinate), Selenium (L-selenomethionine).',
-          'Other ingredients: Vegetarian capsule (hypromellose), microcrystalline cellulose.',
-        ],
-      },
-      {
-        title: 'More Information',
-        items: [
-          '60 vegetarian capsules — 30-day supply',
-          'No artificial colours, flavours or fillers',
-          'Coming soon on Amazon — Subscribe & Save at launch',
-        ],
-      },
-      {
-        title: 'Safety',
-        paragraphs: [
-          'Do not exceed the recommended dose. Consult your healthcare professional before use if pregnant, nursing, taking medication, or having a known medical condition.',
-          'Keep out of reach of children. Store in a cool, dry place away from direct sunlight. Do not use if the seal is broken.',
-        ],
-      },
-    ],
+    rating: 0, // TODO client
+    reviewCount: 0, // TODO client
     benefits: [
       'Supports Energy, Vitality & Daily Balance*',
-      'Methylated B12 & Folate for optimal cellular absorption',
-      'Gentle Magnesium Glycinate for calm & muscle recovery',
+      'Methylated B12 & Folate',
+      'With Magnesium Glycinate',
     ],
     detailedBenefits: [
       {
-        title: 'Cellular Energy & Vitality',
-        description: 'Bioavailable B-complex in enzymatic coenzyme forms supports mitochondrial ATP synthesis without artificial stimulants or afternoon crashes.',
+        title: 'Energy, Vitality & Daily Balance*',
+        description:
+          'A full B-complex (B1, B2, niacin, B6, B12, biotin and pantothenic acid) that supports normal energy metabolism, alongside vitamins A, C, D and E.*',
       },
       {
-        title: 'Active Methylated B12 & Folate',
-        description: 'Utilizes pure L-methylfolate (5-MTHF) and methylcobalamin, bypassing MTHFR gene conversion hurdles so your body can immediately assimilate essential nutrients.',
+        title: 'Methylated B12 & Folate',
+        description:
+          'Vitamin B12 as methylcobalamin and folate as calcium 5-MTHF — the active forms, so your body does not need to convert them first.*',
       },
       {
-        title: 'Chelated Magnesium Glycinate',
-        description: 'Bound to glycine amino acids for high gastrointestinal tolerance and superior bioavailability — promoting calm focus, sound sleep, and muscle ease.',
+        title: 'With Magnesium Glycinate',
+        description:
+          'Magnesium in the gentle glycinate form, plus zinc, selenium, copper, manganese, chromium, molybdenum and calcium.*',
       },
       {
-        title: 'Bone & Immune Defense',
-        description: 'Plant-sourced vegan Vitamin D3 combined with bioactive K2 (MK-7) to guide calcium directly to bone matrix and bolster immune vigilance.',
+        title: 'Female Support Blend',
+        description:
+          'Wild yam, red clover, cranberry, lutein, alpha lipoic acid and lycopene — together with an antioxidant fruit blend and an immune blend of echinacea, spirulina and garlic.*',
       },
     ],
     ingredientSpotlights: [
       {
-        name: 'L-Methylfolate (5-MTHF)',
-        source: 'Bioactive Folate',
-        benefit: 'Active, body-ready folate supporting DNA synthesis and neurotransmitter harmony.',
+        name: 'Folate (Calcium 5-MTHF)',
+        source: 'Methylated Folate',
+        benefit: '667 mcg DFE of folate in its active, methylated form.*',
         image: '/images/card-b12-folate.webp',
       },
       {
-        name: 'Methylcobalamin (B12)',
-        source: 'Coenzyme Form',
-        benefit: 'Enzyme-ready B12 for nerve sheath integrity and red blood cell production.',
+        name: 'Vitamin B12 (Methylcobalamin)',
+        source: 'Methylated B12',
+        benefit: '27 mcg of B12 as methylcobalamin, to support normal energy metabolism.*',
         image: '/images/card-energy.webp',
       },
       {
-        name: 'Magnesium Bisglycinate',
-        source: 'Chelated Mineral',
-        benefit: 'Gentle on digestion, supporting neuromuscular tension release and restorative rest.',
+        name: 'Magnesium Glycinate',
+        source: 'Gentle Mineral Form',
+        benefit: '50 mg of magnesium as magnesium glycinate, a form known for being gentle.*',
         image: '/images/card-magnesium.webp',
       },
       {
-        name: 'Plant Vitamin D3 & K2 (MK-7)',
-        source: 'Wildcrafted Lichen & Natto',
-        benefit: 'Synergistic arterial and bone health support with clinically documented absorption.',
+        name: 'Female Support Blend',
+        source: '192 mg Botanical Blend',
+        benefit: 'Wild yam, red clover, lutein, cranberry, alpha lipoic acid and lycopene.*',
         image: '/images/card-clean.webp',
       },
     ],
-    // TODO client: client to supply exact supplement facts — do not invent dosages
+    servingSize: '2 Capsules',
+    servingsPerContainer: 30,
     supplementFacts: [
-      { nutrient: 'Vitamin A (as beta-carotene)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Vitamin C (as L-ascorbic acid)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Vitamin D3 (as cholecalciferol from lichen)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Vitamin E (as d-alpha tocopherol)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Vitamin K2 (as menaquinone-7)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Thiamin (Vitamin B1 as thiamin HCl)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Riboflavin (Vitamin B2 as riboflavin-5-phosphate)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Niacin (as niacinamide)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Vitamin B6 (as pyridoxal-5-phosphate)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Folate (as L-5-methyltetrahydrofolate)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Vitamin B12 (as methylcobalamin)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Biotin', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Pantothenic Acid (as d-calcium pantothenate)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Magnesium (as magnesium bisglycinate chelate)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Zinc (as zinc bisglycinate chelate)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Selenium (as L-selenomethionine)', amount: 'TBC', dailyValue: 'TBC' },
+      { nutrient: 'Vitamin A (as Beta-Carotene)', amount: '1200 mcg', dailyValue: '133%' },
+      { nutrient: 'Vitamin C (Ascorbic Acid)', amount: '150 mg', dailyValue: '167%' },
+      { nutrient: 'Vitamin D (as Cholecalciferol)', amount: '10 mcg', dailyValue: '50%' },
+      { nutrient: 'Vitamin E (as d-alpha-tocopherol succinate)', amount: '30 mg', dailyValue: '200%' },
+      { nutrient: 'Vitamin B1 (as Thiamine Mononitrate)', amount: '7 mg', dailyValue: '583%' },
+      { nutrient: 'Vitamin B2 (Riboflavin)', amount: '7.5 mg', dailyValue: '577%' },
+      { nutrient: 'Niacin (as Niacin Hexanicotinate)', amount: '30 mg', dailyValue: '188%' },
+      { nutrient: 'Vitamin B6 (as Pyridoxal 5-Phosphate)', amount: '7.5 mg', dailyValue: '441%' },
+      { nutrient: 'Folate (as Calcium 5-MTHF)', amount: '667 mcg DFE', dailyValue: '167%' },
+      { nutrient: 'Vitamin B12 (as Methylcobalamin)', amount: '27 mcg', dailyValue: '1125%' },
+      { nutrient: 'Biotin', amount: '300 mcg', dailyValue: '1000%' },
+      { nutrient: 'Pantothenic Acid (as d-Calcium Pantothenate)', amount: '10 mg', dailyValue: '200%' },
+      { nutrient: 'Calcium (as Calcium Carbonate)', amount: '50 mg', dailyValue: '4%' },
+      { nutrient: 'Magnesium (as Magnesium Glycinate)', amount: '50 mg', dailyValue: '12%' },
+      { nutrient: 'Zinc (as Zinc Oxide)', amount: '15 mg', dailyValue: '136%' },
+      { nutrient: 'Selenium (as Selenium Amino Acid Chelate)', amount: '30 mcg', dailyValue: '55%' },
+      { nutrient: 'Copper (as Copper Gluconate)', amount: '2 mg', dailyValue: '222%' },
+      { nutrient: 'Manganese (as Manganese Amino Acid Chelate)', amount: '2 mg', dailyValue: '87%' },
+      { nutrient: 'Chromium (as Chromium Picolinate)', amount: '120 mcg', dailyValue: '343%' },
+      { nutrient: 'Molybdenum (as Molybdenum Amino Acid Chelate)', amount: '75 mcg', dailyValue: '167%' },
     ],
-    howToTake: {
-      servingSize: '2 vegan capsules daily',
-      timing: 'Best taken in the morning with a meal and water',
-      instructions: 'Take 2 capsules together with your first meal of the day. Fat-soluble nutrients (Vitamins A, D3, E, K2) absorb optimally when paired with healthy fats (avocado, yogurt, eggs, olive oil).',
-      storage: 'Store in a cool, dry place away from direct sunlight. No refrigeration required. Keep tightly capped.',
-    },
+    proprietaryBlends: [
+      {
+        name: 'Female Support Proprietary Blend',
+        ingredients:
+          'Wild Yam 4:1 Extract (Dioscorea villosa, Root), Red Clover 4:1 Extract (Trifolium pratense, Aerial Parts), Lutein (from Tagetes erecta Flower Extract), Cranberry Extract (Vaccinium macrocarpon, Fruit), Alpha Lipoic Acid, Lycopene',
+        amount: '192 mg',
+      },
+      ANTIOXIDANT_BLEND,
+      {
+        name: 'Immune Proprietary Blend',
+        ingredients:
+          'Echinacea 4:1 Extract (Echinacea purpurea, Whole Plant), Spirulina (Arthrospira platensis, Algae), Garlic (Allium sativum, Bulb)',
+        amount: '115 mg',
+      },
+    ],
+    otherIngredients: 'Hypromellose, Stearic Acid, L-Leucine, Rice Flour, Silica',
+    howToTake,
     faqs: [
       {
-        question: "Why does ONCE use methylated B12 and folate?",
-        answer: "Up to 40% of the population has an MTHFR gene variation that hinders the conversion of synthetic folic acid and cyanocobalamin into usable forms. ONCE uses pure methylcobalamin and L-methylfolate (5-MTHF)—the bioidentical, enzymatic forms your cells recognize immediately.",
+        question: 'Why does ONCE use methylated B12 and folate?',
+        answer:
+          'Women’s Multi uses methylcobalamin (B12) and calcium 5-MTHF (folate). These are the active, methylated forms of the two vitamins, so your body can use them without converting them first.',
       },
       {
-        question: "Is Women's Multi gentle on an empty stomach?",
-        answer: "We formulate exclusively with chelated magnesium glycinate and bioactive vitamin complexes designed for maximum gastric tolerance. While gentle, we recommend taking it with a meal for peak fat-soluble vitamin absorption.",
+        question: 'How should I take Women’s Multi?',
+        answer:
+          'Take two capsules daily with a meal, or as recommended by a healthcare professional. If you are sensitive, start with one capsule daily with food.',
       },
       {
-        question: "How do I purchase on Amazon?",
-        answer: "Women's Multi is coming soon on Amazon. Once the listing is live, the Amazon button on this page will take you straight to it, where you can order with Prime delivery or set up monthly Subscribe & Save.",
+        question: 'Is it gluten-free and dairy-free?',
+        answer:
+          'Yes. The label states 0 gluten and 0 dairy. The full list of other ingredients is: hypromellose, stearic acid, L-leucine, rice flour and silica.',
       },
       {
-        question: "Are the capsules vegan and allergen-free?",
-        answer: "Yes. ONCE capsules are 100% plant-based, gluten-free, dairy-free, soy-free, and non-GMO, formulated without artificial fillers, colorings, or synthetic binders.",
+        question: 'Can I check the test report for my bottle?',
+        answer:
+          'Yes. Enter the batch number printed on your bottle on our Verify Batch page to see the Certificate of Analysis (COA) and claim report for that batch.',
+      },
+      {
+        question: 'How do I purchase on Amazon?',
+        answer:
+          "ONCE is launching soon on Amazon. Once the listing is live, the Amazon button on this page will take you straight to it, where you can order or set up Subscribe & Save.",
       },
     ],
   },
@@ -238,7 +268,8 @@ export const products: Product[] = [
     gender: 'men',
     eyebrow: "MEN'S MULTI",
     tagline: 'Advanced Bioactive Formula',
-    description: "An uncompromising daily foundation tuned for male metabolic demands, physical stamina, and cognitive focus. Formulated without iron, highlighting active coenzyme B-vitamins and chelated magnesium.",
+    description:
+      "A daily multivitamin for men with 20 vitamins and minerals, methylated B12 and folate, magnesium glycinate, and a male support blend with stinging nettle root and saw palmetto. Two capsules a day with a meal.",
     accent: 'var(--men)',
     accentHex: '#2F6B8C',
     image: '/images/mens-multi.webp',
@@ -254,212 +285,262 @@ export const products: Product[] = [
     price: '', // optional, hidden if empty
     capsules: 60,
     supplyDays: 30,
-    rating: 4.9,
-    reviewCount: 124, // TODO client
-    ratingBreakdown: [86, 9, 3, 1, 1], // TODO client
-    badges: ['Daily Energy & Stamina*', 'Muscle & Recovery*', 'Methylated B12 & Folate', 'Zinc & Magnesium'],
-    infoSections: [
-      {
-        title: 'Main Benefits',
-        items: [
-          "Methylated Multivitamin for Men — Folate as 5-MTHF and Vitamin B12 as methylcobalamin. Active forms your body can use directly, without having to convert them first.*",
-          'Calibrated Without Iron — Most adult men do not need added iron, so the formula leaves it out while keeping antioxidant support.*',
-          'Energy & Stamina Support — A full B-complex helps support normal energy metabolism through the day, without stimulants.*',
-          'Muscle & Recovery — Chelated Magnesium Glycinate and Zinc Bisglycinate support normal muscle function and recovery.*',
-          'Year-Round Immune Resilience — Vitamin C, D3, Zinc and Selenium support your natural immune defences.*',
-        ],
-      },
-      {
-        title: 'Is Good For',
-        items: [
-          'Men looking for a once-daily foundation multivitamin',
-          'Active lifestyles, training days and long workdays',
-          'Anyone who prefers methylated (active) B vitamins',
-          'Those who want an iron-free formula',
-        ],
-      },
-      {
-        title: 'How to Take',
-        paragraphs: [
-          'Take 2 capsules daily with a meal and a glass of water — breakfast or your pre-workout meal works well.',
-          'Consistent daily intake works best. Pairs well with protein powders, creatine and electrolytes.',
-        ],
-      },
-      {
-        title: 'Ingredients',
-        paragraphs: [
-          'Vitamin A, Vitamin C, Vitamin D3, Vitamin E, Vitamin K2 (MK-7), Thiamin (B1), Riboflavin (B2), Niacin, Vitamin B6 (P5P), Folate (5-MTHF), Vitamin B12 (methylcobalamin), Biotin, Pantothenic Acid, Magnesium (bisglycinate), Zinc (bisglycinate), Selenium (L-selenomethionine).',
-          'Other ingredients: Vegetarian capsule (hypromellose), microcrystalline cellulose.',
-        ],
-      },
-      {
-        title: 'More Information',
-        items: [
-          '60 vegetarian capsules — 30-day supply',
-          'No artificial colours, flavours or fillers',
-          'Coming soon on Amazon — Subscribe & Save at launch',
-        ],
-      },
-      {
-        title: 'Safety',
-        paragraphs: [
-          'Do not exceed the recommended dose. Consult your healthcare professional before use if taking medication or having a known medical condition.',
-          'Keep out of reach of children. Store in a cool, dry place away from heat and moisture. Do not use if the seal is broken.',
-        ],
-      },
-    ],
+    rating: 0, // TODO client
+    reviewCount: 0, // TODO client
     benefits: [
       "Supports Men's Daily Vitality & Energy*",
-      'Methylated B12 & Folate for endurance & mental clarity',
-      'With Magnesium Glycinate & Zinc Chelate',
+      'Methylated B12 & Folate',
+      'With Magnesium Glycinate',
     ],
     detailedBenefits: [
       {
-        title: "Men's Daily Vitality & Endurance",
-        description: 'High-potency B-complex fuels daily metabolic pathways and muscle stamina without nervous jitters or synthetic caffeine.',
+        title: "Men's Daily Vitality & Energy*",
+        description:
+          'A full B-complex (B1, B2, niacin, B6, B12, biotin and pantothenic acid) that supports normal energy metabolism, alongside vitamins A, C, D and E.*',
       },
       {
-        title: 'Methylated Folate & B12 (Active Enzymatic Forms)',
-        description: 'Delivers active methyl groups directly to the methylation cycle, optimizing cellular repair, homocysteine regulation, and neurotransmitter balance.',
+        title: 'Methylated B12 & Folate',
+        description:
+          'Vitamin B12 as methylcobalamin and folate as calcium 5-MTHF — the active forms, so your body does not need to convert them first.*',
       },
       {
-        title: 'Magnesium Glycinate + Zinc Bisglycinate',
-        description: 'Crucial for testosterone synthesis, cardiovascular health, protein synthesis, and restful neuromuscular recovery after strenuous days.',
+        title: 'With Magnesium Glycinate',
+        description:
+          'Magnesium in the gentle glycinate form, plus zinc, selenium, copper, manganese, chromium, molybdenum and calcium.*',
       },
       {
-        title: 'Zero Iron — Calibrated for Men',
-        description: 'Men typically do not lose iron monthly and excess iron can induce oxidative stress. Our formula consciously omits iron while maximizing antioxidant defenses.',
+        title: 'Male Support Blend',
+        description:
+          'Stinging nettle root, saw palmetto, lutein and lycopene — together with an antioxidant fruit blend and an immune blend of garlic, spirulina, echinacea and beta-glucans.*',
       },
     ],
     ingredientSpotlights: [
       {
-        name: 'Magnesium Bisglycinate',
-        source: 'Chelated Mineral',
-        benefit: 'Supports healthy testosterone levels, muscle recovery, and deep sleep architecture.',
-        image: '/images/card-magnesium.webp',
-      },
-      {
-        name: 'Methylcobalamin (B12)',
-        source: 'Enzymatic Coenzyme',
-        benefit: 'Sustains cellular respiration, stamina, and red blood cell oxygenation.',
+        name: 'Vitamin B12 (Methylcobalamin)',
+        source: 'Methylated B12',
+        benefit: '27 mcg of B12 as methylcobalamin, to support normal energy metabolism.*',
         image: '/images/card-energy.webp',
       },
       {
-        name: 'Zinc Bisglycinate Chelate',
-        source: 'Albion Chelated Zinc',
-        benefit: 'Optimal prostate function, reproductive health, and immune cell signaling.',
-        image: '/images/card-clean.webp',
-      },
-      {
-        name: 'L-Methylfolate (5-MTHF)',
-        source: 'Bioidentical Folate',
-        benefit: 'Cardiovascular homocysteine regulation and sharp cognitive focus.',
+        name: 'Folate (Calcium 5-MTHF)',
+        source: 'Methylated Folate',
+        benefit: '667 mcg DFE of folate in its active, methylated form.*',
         image: '/images/card-b12-folate.webp',
       },
+      {
+        name: 'Magnesium Glycinate',
+        source: 'Gentle Mineral Form',
+        benefit: '50 mg of magnesium as magnesium glycinate, a form known for being gentle.*',
+        image: '/images/card-magnesium.webp',
+      },
+      {
+        name: 'Male Support Blend',
+        source: '170 mg Botanical Blend',
+        benefit: 'Stinging nettle root, saw palmetto, lutein and lycopene.*',
+        image: '/images/card-clean.webp',
+      },
     ],
-    // TODO client: client to supply exact supplement facts — do not invent dosages
+    servingSize: '2 Capsules',
+    servingsPerContainer: 30,
     supplementFacts: [
-      { nutrient: 'Vitamin A (as beta-carotene)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Vitamin C (as L-ascorbic acid)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Vitamin D3 (as cholecalciferol from lichen)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Vitamin E (as d-alpha tocopherol)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Vitamin K2 (as menaquinone-7)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Thiamin (Vitamin B1 as thiamin HCl)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Riboflavin (Vitamin B2 as riboflavin-5-phosphate)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Niacin (as niacinamide)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Vitamin B6 (as pyridoxal-5-phosphate)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Folate (as L-5-methyltetrahydrofolate)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Vitamin B12 (as methylcobalamin)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Biotin', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Pantothenic Acid (as d-calcium pantothenate)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Magnesium (as magnesium bisglycinate chelate)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Zinc (as zinc bisglycinate chelate)', amount: 'TBC', dailyValue: 'TBC' },
-      { nutrient: 'Selenium (as L-selenomethionine)', amount: 'TBC', dailyValue: 'TBC' },
+      { nutrient: 'Vitamin A (as Beta-Carotene)', amount: '600 mcg', dailyValue: '67%' },
+      { nutrient: 'Vitamin C (as Ascorbic Acid)', amount: '150 mg', dailyValue: '167%' },
+      { nutrient: 'Vitamin D (as Cholecalciferol)', amount: '10 mcg', dailyValue: '50%' },
+      { nutrient: 'Vitamin E (as d-Alpha-Tocopheryl Succinate)', amount: '13.5 mg', dailyValue: '90%' },
+      { nutrient: 'Thiamin (Vitamin B1) (as Thiamin Mononitrate)', amount: '7 mg', dailyValue: '583%' },
+      { nutrient: 'Riboflavin (Vitamin B2)', amount: '7.5 mg', dailyValue: '577%' },
+      { nutrient: 'Niacin (as Inositol Hexanicotinate)', amount: '30 mg', dailyValue: '188%' },
+      { nutrient: 'Vitamin B6 (as Pyridoxal 5-Phosphate)', amount: '7.5 mg', dailyValue: '441%' },
+      { nutrient: 'Folate (as Calcium 5-MTHF)', amount: '667 mcg DFE', dailyValue: '167%' },
+      { nutrient: 'Vitamin B12 (as Methylcobalamin)', amount: '27 mcg', dailyValue: '1125%' },
+      { nutrient: 'Biotin', amount: '300 mcg', dailyValue: '1000%' },
+      { nutrient: 'Pantothenic Acid (as d-Calcium Pantothenate)', amount: '10 mg', dailyValue: '200%' },
+      { nutrient: 'Calcium (as Calcium Carbonate)', amount: '50 mg', dailyValue: '4%' },
+      { nutrient: 'Magnesium (as Magnesium Glycinate)', amount: '50 mg', dailyValue: '12%' },
+      { nutrient: 'Zinc (as Zinc Oxide)', amount: '15 mg', dailyValue: '136%' },
+      { nutrient: 'Selenium (as Selenium Amino Acid Chelate)', amount: '30 mcg', dailyValue: '55%' },
+      { nutrient: 'Copper (as Copper Gluconate)', amount: '2 mg', dailyValue: '222%' },
+      { nutrient: 'Manganese (as Manganese Amino Acid Chelate)', amount: '2 mg', dailyValue: '87%' },
+      { nutrient: 'Chromium (as Chromium Picolinate)', amount: '120 mcg', dailyValue: '343%' },
+      { nutrient: 'Molybdenum (as Molybdenum Amino Acid Chelate)', amount: '75 mcg', dailyValue: '167%' },
     ],
-    howToTake: {
-      servingSize: '2 vegan capsules daily',
-      timing: 'Best taken in the morning with breakfast or pre-workout meal',
-      instructions: 'Take 2 capsules daily with a wholesome meal and 8 oz of water. Consistent daily intake builds cellular reserves within 3–4 weeks.',
-      storage: 'Keep in a cool, dry place away from heat and moisture. Store sealed in original UV-resistant packaging.',
-    },
+    proprietaryBlends: [
+      {
+        name: 'Male Support Proprietary Blend',
+        ingredients:
+          'Stinging Nettle 4:1 Extract (Urtica dioica, Root), Saw Palmetto (Serenoa repens, Fruit), Lutein (from Tagetes erecta Flower Extract), Lycopene',
+        amount: '170 mg',
+      },
+      {
+        name: 'Immune Support Proprietary Blend',
+        ingredients:
+          'Garlic (Allium sativum, Bulb), Spirulina (Arthrospira platensis, Algae), Echinacea Extract (4% Polyphenols) (Echinacea purpurea, Whole Plant), Beta-Glucans',
+        amount: '110 mg',
+      },
+      ANTIOXIDANT_BLEND,
+    ],
+    otherIngredients: 'Hypromellose, Rice Flour, Stearic Acid, L-Leucine, Silica',
+    howToTake,
     faqs: [
       {
-        question: "Why is there no iron in Men's Multi?",
-        answer: "Unlike women, adult men rarely experience iron depletion through physiological loss. Unnecessary iron supplementation can cause oxidative stress and organ accumulation. We intentionally exclude iron to ensure optimal long-term male wellness.",
+        question: 'Why does ONCE use methylated B12 and folate?',
+        answer:
+          'Men’s Multi uses methylcobalamin (B12) and calcium 5-MTHF (folate). These are the active, methylated forms of the two vitamins, so your body can use them without converting them first.',
       },
       {
-        question: "What makes magnesium glycinate superior for men?",
-        answer: "Traditional multivitamins use cheap magnesium oxide, which has ~4% absorption and acts as a laxative. Magnesium glycinate is chelated with glycine, reaching muscles and the nervous system directly for genuine recovery.",
+        question: 'How should I take Men’s Multi?',
+        answer:
+          'Take two capsules daily with a meal, or as recommended by a healthcare professional. If you are sensitive, start with one capsule daily with food.',
       },
       {
-        question: "How do I order through Amazon?",
-        answer: "Men's Multi is coming soon on Amazon. Once the listing is live, the Amazon button on this page will open it, where you can buy once or set up a Subscribe & Save delivery every 30 days.",
+        question: 'Is it gluten-free and dairy-free?',
+        answer:
+          'Yes. The label states 0 gluten and 0 dairy. The full list of other ingredients is: hypromellose, rice flour, stearic acid, L-leucine and silica.',
       },
       {
-        question: "Can I take this alongside protein powders or electrolytes?",
-        answer: "Yes, ONCE Men's Multi is designed to sit cleanly as your foundational micronutrient base. It pairs effortlessly with whey/plant protein, creatine, and daily hydration regimens.",
+        question: 'Can I check the test report for my bottle?',
+        answer:
+          'Yes. Enter the batch number printed on your bottle on our Verify Batch page to see the Certificate of Analysis (COA) and claim report for that batch.',
+      },
+      {
+        question: 'How do I order through Amazon?',
+        answer:
+          "ONCE is launching soon on Amazon. Once the listing is live, the Amazon button on this page will take you straight to it — buy once or set up Subscribe & Save.",
       },
     ],
   },
 ];
+
+/* ── Accordion + badge content (built from the label data above, so it can never disagree with it) ── */
+
+const BADGES: Record<string, string[]> = {
+  'womens-multi': ['Energy & Vitality*', 'Methylated B12 & Folate', '0 Gluten · 0 Dairy', 'Third Party Tested'],
+  'mens-multi': ["Daily Vitality & Energy*", 'Methylated B12 & Folate', '0 Gluten · 0 Dairy', 'Third Party Tested'],
+};
+
+const MAIN_BENEFITS: Record<string, string[]> = {
+  'womens-multi': [
+    'Methylated B12 & Folate — Vitamin B12 as methylcobalamin (27 mcg) and folate as calcium 5-MTHF (667 mcg DFE): the active forms your body can use without converting them first.*',
+    'Energy, Vitality & Daily Balance — A full B-complex (B1, B2, niacin, B6, B12, biotin and pantothenic acid) supports normal energy metabolism.*',
+    'With Magnesium Glycinate — 50 mg of magnesium in the gentle glycinate form, plus zinc, selenium, copper, manganese, chromium and molybdenum.*',
+    'Female Support Blend — Wild yam, red clover, cranberry, lutein, alpha lipoic acid and lycopene (192 mg).*',
+    'Immune & Antioxidant Blends — Echinacea, spirulina and garlic, plus green tea, hawthorn, bilberry, grape seed, black currant and pomegranate.*',
+  ],
+  'mens-multi': [
+    'Methylated B12 & Folate — Vitamin B12 as methylcobalamin (27 mcg) and folate as calcium 5-MTHF (667 mcg DFE): the active forms your body can use without converting them first.*',
+    "Men's Daily Vitality & Energy — A full B-complex (B1, B2, niacin, B6, B12, biotin and pantothenic acid) supports normal energy metabolism.*",
+    'With Magnesium Glycinate — 50 mg of magnesium in the gentle glycinate form, plus zinc, selenium, copper, manganese, chromium and molybdenum.*',
+    'Male Support Blend — Stinging nettle root, saw palmetto, lutein and lycopene (170 mg).*',
+    'Immune & Antioxidant Blends — Garlic, spirulina, echinacea and beta-glucans, plus green tea, hawthorn, bilberry, grape seed, black currant and pomegranate.*',
+  ],
+};
+
+const GOOD_FOR: Record<string, string[]> = {
+  'womens-multi': [
+    'Women looking for a once-daily foundation multivitamin',
+    'Busy routines where meals are smaller or less varied',
+    'Anyone who prefers methylated (active) B12 and folate',
+    'Those who want a gluten-free and dairy-free formula',
+  ],
+  'mens-multi': [
+    'Men looking for a once-daily foundation multivitamin',
+    'Active lifestyles, training days and long workdays',
+    'Anyone who prefers methylated (active) B12 and folate',
+    'Those who want a gluten-free and dairy-free formula',
+  ],
+};
+
+const buildInfoSections = (p: BaseProduct): Product['infoSections'] => [
+  { title: 'Main Benefits', items: MAIN_BENEFITS[p.slug] },
+  { title: 'Is Good For', items: GOOD_FOR[p.slug] },
+  {
+    title: 'How to Take',
+    paragraphs: [LABEL_SUGGESTED_USE],
+  },
+  {
+    title: 'Ingredients',
+    paragraphs: [
+      p.supplementFacts.map((f) => `${f.nutrient} ${f.amount}`).join(', ') + '.',
+      ...p.proprietaryBlends.map((b) => `${b.name} (${b.amount}): ${b.ingredients}.`),
+      `Other ingredients: ${p.otherIngredients}.`,
+    ],
+  },
+  {
+    title: 'More Information',
+    items: [
+      `${p.capsules} capsules — ${p.supplyDays}-day supply (${p.servingSize} per serving)`,
+      '0 Gluten · 0 Dairy',
+      'Third party tested · cGMP-certified facility',
+      LABEL_CLAIMS.madeIn,
+      `Distributed by ${DISTRIBUTOR.name}, ${DISTRIBUTOR.address.join(', ')}`,
+      'Coming soon on Amazon — Subscribe & Save at launch',
+    ],
+  },
+  {
+    title: 'Safety',
+    paragraphs: [
+      LABEL_CAUTION,
+      LABEL_STORAGE,
+      '*These statements have not been evaluated by the Food and Drug Administration. This product is not intended to diagnose, treat, cure, or prevent any disease.',
+    ],
+  },
+];
+
+export const products: Product[] = baseProducts.map((p) => ({
+  ...p,
+  badges: BADGES[p.slug] ?? [],
+  infoSections: buildInfoSections(p),
+}));
 
 export const comparisonData = [
   {
-    feature: 'Primary Focus',
-    womens: 'Cellular vitality, daily balance & hormonal equilibrium',
-    mens: 'Physical stamina, metabolic energy & cognitive endurance',
+    feature: 'Formula focus',
+    womens: 'Energy, vitality & daily balance*',
+    mens: "Men's daily vitality & energy*",
   },
   {
-    feature: 'Serving Size',
-    womens: '2 capsules daily (30-day supply)',
-    mens: '2 capsules daily (30-day supply)',
+    feature: 'Serving',
+    womens: '2 capsules daily with a meal (30 servings)',
+    mens: '2 capsules daily with a meal (30 servings)',
   },
   {
-    feature: 'Bioactive Methylated B12 & Folate',
-    womens: 'Yes (Methylcobalamin + 5-MTHF)',
-    mens: 'Yes (Methylcobalamin + 5-MTHF)',
+    feature: 'Methylated B12 & Folate',
+    womens: 'Methylcobalamin 27 mcg · Calcium 5-MTHF 667 mcg DFE',
+    mens: 'Methylcobalamin 27 mcg · Calcium 5-MTHF 667 mcg DFE',
   },
   {
-    feature: 'Gentle Magnesium Glycinate',
-    womens: 'Yes (chelated bisglycinate)',
-    mens: 'Yes (chelated bisglycinate)',
+    feature: 'Magnesium Glycinate',
+    womens: '50 mg',
+    mens: '50 mg',
   },
   {
-    feature: 'Iron Content',
-    womens: 'Zero added iron (digestive comfort)',
-    mens: 'Zero iron (calibrated for male physiology)',
+    feature: 'Vitamin A · Vitamin E',
+    womens: '1200 mcg · 30 mg',
+    mens: '600 mcg · 13.5 mg',
   },
   {
-    feature: 'Zinc Bioavailability',
-    womens: 'Zinc bisglycinate chelate',
-    mens: 'Zinc bisglycinate chelate (immune & male health support)',
+    feature: 'Support blend',
+    womens: 'Female Support Blend, 192 mg (wild yam, red clover, cranberry…)',
+    mens: 'Male Support Blend, 170 mg (stinging nettle root, saw palmetto…)',
   },
   {
-    feature: 'Plant Vitamin D3 + K2 (MK-7)',
-    womens: 'Yes (Wild lichen D3 + natto K2)',
-    mens: 'Yes (Wild lichen D3 + natto K2)',
+    feature: 'Immune blend',
+    womens: '115 mg — echinacea, spirulina, garlic',
+    mens: '110 mg — garlic, spirulina, echinacea, beta-glucans',
   },
   {
-    feature: 'Testing & Purity',
-    womens: '100% Third-party tested, ISO accredited',
-    mens: '100% Third-party tested, ISO accredited',
+    feature: 'Antioxidant Fruit & Energy blend',
+    womens: '187 mg',
+    mens: '187 mg',
   },
   {
-    feature: 'Capsule Formulation',
-    womens: 'Vegan cellulose, non-GMO, zero fillers',
-    mens: 'Vegan cellulose, non-GMO, zero fillers',
+    feature: 'Free from',
+    womens: '0 Gluten · 0 Dairy',
+    mens: '0 Gluten · 0 Dairy',
+  },
+  {
+    feature: 'Quality',
+    womens: 'Third party tested · cGMP-certified facility',
+    mens: 'Third party tested · cGMP-certified facility',
   },
 ];
-
-
-export const LABEL_CLAIMS = {
-  freeFrom: ['Gluten', 'Dairy'],
-  quality: ['Third party Tested', 'cGMP-Certified Facility'],
-  madeIn: 'Proudly manufactured in India using globally sourced ingredients.',
-} as const;
-
-export const DISTRIBUTOR = {
-  name: 'Once Health LLC',
-  address: ['30 N Gould St Ste R', 'Sheridan, WY 82801'],
-  email: 'support@oncehealth.co',
-} as const;

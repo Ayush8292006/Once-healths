@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { products } from '../data/products';
+import { products, LABEL_CLAIMS, LABEL_CAUTION } from '../data/products';
+import { productStats } from '../data/stats';
+import { StatCounters } from '../components/StatCounters';
 import { SEO } from '../components/SEO';
 import { AmazonButton } from '../components/AmazonButton';
 import { ConcentricRings } from '../components/ConcentricRings';
@@ -10,7 +12,7 @@ import { ProductReviews } from '../sections/ProductReviews';
 import { ratingStats, soldThisMonth, formatSold } from '../data/reviews';
 import {
   Star, CheckCircle2, ChevronDown, Flame,
-  Package
+  Package, FileText
 } from 'lucide-react';
 
 
@@ -35,17 +37,17 @@ const CertifiedIcon = () => (
     <path d="M9.2 11.4l1.9 1.9 3.7-3.8" />
   </svg>
 );
-const GlobeIcon = () => (
+const LabTestedIcon = () => (
   <svg {...iconProps} aria-hidden="true">
-    <circle cx="12" cy="12" r="8.5" />
-    <path d="M3.5 12h17" />
-    <path d="M12 3.5c2.4 2.5 3.6 5.3 3.6 8.5s-1.2 6-3.6 8.5c-2.4-2.5-3.6-5.3-3.6-8.5s1.2-6 3.6-8.5Z" />
+    <path d="M9.5 3.5h5" />
+    <path d="M10.5 3.5v5.2L5.6 17.4A2 2 0 0 0 7.4 20.5h9.2a2 2 0 0 0 1.8-3.1l-4.9-8.7V3.5" />
+    <path d="M7.6 14.5h8.8" />
   </svg>
 );
 const TRUST_ITEMS = [
   { Icon: GlutenDairyFreeIcon, label: '0 Gluten · 0 Dairy' },
   { Icon: CertifiedIcon, label: 'cGMP Certified' },
-  { Icon: GlobeIcon, label: 'Made in India' },
+  { Icon: LabTestedIcon, label: '3rd Party Lab Tested' },
 ];
 
 const ProductPage: React.FC = () => {
@@ -249,8 +251,15 @@ const ProductPage: React.FC = () => {
                   className="w-full"
                 />
                 <p className="text-xs text-ink-muted text-center tracking-wide">
-                  Launching soon on Amazon · Prime delivery &amp; Subscribe &amp; Save at launch
+                  Launching soon on Amazon · Subscribe &amp; Save at launch
                 </p>
+                <Link
+                  to="/verify"
+                  className="flex items-center justify-center gap-1.5 text-xs font-heading font-semibold text-ink hover:text-brand-green transition-colors"
+                >
+                  <FileText className="w-4 h-4" />
+                  Already have a bottle? Verify your batch &amp; view the COA
+                </Link>
               </div>
 
               {/* Info accordion */}
@@ -326,6 +335,16 @@ const ProductPage: React.FC = () => {
         </div>
       </div>
 
+      {/* ── AT A GLANCE (label facts, moved here from the home page) ── */}
+      <section className="py-16 bg-bg border-t border-line">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8">
+          <span className="text-xs font-heading font-semibold uppercase tracking-eyebrow text-ink-muted block mb-8 text-center md:text-left">
+            {product.name} at a glance
+          </span>
+          <StatCounters stats={productStats} />
+        </div>
+      </section>
+
       {/* ── MAIN BENEFITS ────────────────────────────── */}
       <section className="py-20 bg-surface border-t border-line">
         <div className="max-w-7xl mx-auto px-5 sm:px-8">
@@ -371,7 +390,7 @@ const ProductPage: React.FC = () => {
               Ingredient Spotlight
             </span>
             <h2 className="text-3xl sm:text-4xl font-heading font-bold text-ink tracking-tight">
-              No guesswork. Every molecule matters.
+              What's inside, and how much.
             </h2>
           </div>
 
@@ -401,7 +420,7 @@ const ProductPage: React.FC = () => {
 
       {/* ── SUPPLEMENT FACTS ─────────────────────────── */}
       <section className="py-20 bg-surface border-t border-line">
-        <div className="max-w-4xl mx-auto px-5 sm:px-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-8">
           <div className="mb-10">
             <span className="text-xs font-heading font-semibold uppercase tracking-eyebrow text-ink-muted block mb-3">
               Label Transparency
@@ -410,18 +429,16 @@ const ProductPage: React.FC = () => {
               Supplement Facts
             </h2>
             <p className="text-sm text-ink-muted">
-              Serving Size: 2 Capsules · Servings Per Container: 30
+              Exactly as printed on the {product.name} label.
             </p>
-            <p className="text-xs text-ink-muted mt-2">
-              Amounts shown as “TBC” will be updated with the final label values.
-            </p>
-            {/* TODO client: client to supply exact supplement facts — placeholder data shown */}
           </div>
           <div className="rounded-2xl border border-line overflow-hidden shadow-soft">
             {/* Label Header */}
             <div className="bg-ink p-5 text-center">
               <h3 className="text-xl font-heading font-bold text-surface tracking-wider">Supplement Facts</h3>
-              <p className="text-surface/70 text-xs mt-1">Serving Size 2 Capsules · 30 Servings Per Container</p>
+              <p className="text-surface/70 text-xs mt-1">
+                Serving Size: {product.servingSize} · Servings Per Container: {product.servingsPerContainer}
+              </p>
             </div>
             {/* Table */}
             <table className="w-full text-sm">
@@ -440,11 +457,28 @@ const ProductPage: React.FC = () => {
                     <td className="px-5 py-3 text-right font-medium text-ink text-xs">{row.dailyValue}</td>
                   </tr>
                 ))}
+                {product.proprietaryBlends.map((blend) => (
+                  <tr key={blend.name} className="border-t-2 border-ink/70 align-top">
+                    <td className="px-5 py-3 text-xs text-ink-muted leading-relaxed">
+                      <span className="font-heading font-semibold text-ink">{blend.name}:</span>{' '}
+                      {blend.ingredients}
+                    </td>
+                    <td className="px-5 py-3 text-right text-ink-muted text-xs whitespace-nowrap">{blend.amount}</td>
+                    <td className="px-5 py-3 text-right font-medium text-ink text-xs">†</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
-            <div className="bg-bg p-5 text-xs text-ink-muted border-t border-line">
-              * Percent Daily Values are based on a 2,000 calorie diet. † Daily Value not established.<br />
-              Other Ingredients: Vegetarian capsule (hypromellose), microcrystalline cellulose.{/* TODO client: confirm complete other ingredients list */}
+            <div className="bg-bg p-5 text-xs text-ink-muted border-t border-line space-y-2">
+              <p>† Daily Value (DV) Not Established.</p>
+              <p>
+                <span className="font-semibold text-ink">Other Ingredients:</span> {product.otherIngredients}
+              </p>
+              <p className="pt-2 border-t border-line/60">
+                <span className="font-semibold text-ink">0</span> Gluten · <span className="font-semibold text-ink">0</span> Dairy ·{' '}
+                {LABEL_CLAIMS.quality.join(' · ')}
+              </p>
+              <p className="italic">“{LABEL_CLAIMS.madeIn}”</p>
             </div>
           </div>
         </div>
@@ -467,16 +501,20 @@ const ProductPage: React.FC = () => {
                   <p className="text-sm text-ink-muted">{product.howToTake.servingSize}</p>
                 </div>
                 <div className="p-5 bg-surface rounded-brand border border-line">
-                  <h4 className="text-sm font-heading font-semibold text-ink mb-1">Best Timing</h4>
+                  <h4 className="text-sm font-heading font-semibold text-ink mb-1">When</h4>
                   <p className="text-sm text-ink-muted">{product.howToTake.timing}</p>
                 </div>
                 <div className="p-5 bg-surface rounded-brand border border-line">
-                  <h4 className="text-sm font-heading font-semibold text-ink mb-1">Instructions</h4>
+                  <h4 className="text-sm font-heading font-semibold text-ink mb-1">Suggested Use</h4>
                   <p className="text-sm text-ink-muted">{product.howToTake.instructions}</p>
                 </div>
                 <div className="p-5 bg-surface rounded-brand border border-line">
-                  <h4 className="text-sm font-heading font-semibold text-ink mb-1">Storage</h4>
+                  <h4 className="text-sm font-heading font-semibold text-ink mb-1">Storage &amp; Safety</h4>
                   <p className="text-sm text-ink-muted">{product.howToTake.storage}</p>
+                </div>
+                <div className="p-5 bg-surface rounded-brand border border-line">
+                  <h4 className="text-sm font-heading font-semibold text-ink mb-1">Caution</h4>
+                  <p className="text-sm text-ink-muted">{LABEL_CAUTION}</p>
                 </div>
               </div>
             </div>
@@ -551,7 +589,7 @@ const ProductPage: React.FC = () => {
 
       {/* Disclaimer */}
       <div className="bg-surface border-t border-line px-5 sm:px-8 py-8 max-w-7xl mx-auto text-xs text-ink-muted leading-relaxed">
-        * These statements have not been evaluated by the Food and Drug Administration. This product is not intended to diagnose, treat, cure, or prevent any disease. Consult your healthcare professional before use if pregnant, nursing, or taking medication.
+        * These statements have not been evaluated by the Food and Drug Administration. This product is not intended to diagnose, treat, cure, or prevent any disease. {LABEL_CAUTION}
       </div>
 
       <ProductReviews product={product} />

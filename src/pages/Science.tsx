@@ -63,12 +63,12 @@ const heroStats = [
 /** Per-formula science — same lab-report theme, switchable Women's / Men's */
 const FORMULA_FOCUS: Record<'women' | 'men', { focus: string; note: string }> = {
   women: {
-    focus: 'Energy · Balance · Hair, skin & nails',
-    note: 'Iron-free and gentle on the stomach. Methylated B vitamins plus biotin, zinc and selenium for everyday female needs.*',
+    focus: 'Energy · Vitality · Daily balance',
+    note: 'Methylated B12 & folate and magnesium glycinate, plus a Female Support Blend with wild yam, red clover and cranberry.*'
   },
   men: {
-    focus: 'Stamina · Recovery · Focus',
-    note: 'Calibrated without iron for men. Methylated B vitamins plus magnesium and zinc chelates for energy and recovery.*',
+    focus: 'Daily vitality · Energy',
+    note: 'Methylated B12 & folate and magnesium glycinate, plus a Male Support Blend with stinging nettle root and saw palmetto.*'
   },
 };
 

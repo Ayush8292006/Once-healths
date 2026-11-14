@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ConcentricRings } from '../components/ConcentricRings';
 import { BottleImage } from '../components/BottleImage';
 import { HeroBackdrop } from '../components/HeroBackdrop';
-import { ShieldCheck, Sparkles, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, Wheat, CheckCircle2 } from 'lucide-react';
 import gsap from 'gsap';
 import { intro } from '../animations/intro';
 
@@ -162,7 +162,7 @@ export const Hero: React.FC<HeroProps> = ({ isPreloaderFinished }) => {
           {/* Left — copy */}
           <div data-hp="copy" className="lg:col-span-7 flex flex-col justify-center z-10">
             <p className="text-[11px] uppercase tracking-[0.18em] text-ink-muted/80 font-medium mb-5">
-              Once Daily · Est. 2024
+              Once Daily · Advanced Bioactive Formula
             </p>
 
             <h1
@@ -186,8 +186,8 @@ export const Hero: React.FC<HeroProps> = ({ isPreloaderFinished }) => {
               ref={subtextRef}
               className="text-base sm:text-lg text-ink-muted leading-relaxed max-w-md mb-8 font-normal"
             >
-              Methylated B12, chelated magnesium, and folate your body can actually
-              absorb. One tablet, every morning — not a shelf of bottles.
+              Methylated B12 &amp; folate, magnesium glycinate and 20 vitamins and
+              minerals. Two capsules with a meal — not a shelf of bottles.*
             </p>
 
             <div ref={buttonsRef} className="mb-10">
@@ -203,7 +203,7 @@ export const Hero: React.FC<HeroProps> = ({ isPreloaderFinished }) => {
                 </div>
               </Link>
               <p className="mt-3 text-xs text-ink-muted">
-                Free shipping · 30-day returns · No subscription required
+                Launching soon on Amazon · Subscribe &amp; Save at launch
               </p>
             </div>
 
@@ -217,11 +217,11 @@ export const Hero: React.FC<HeroProps> = ({ isPreloaderFinished }) => {
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-brand-green" strokeWidth={2.2} />
-                Non-GMO
+                Gluten free
               </span>
               <span className="inline-flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-brand-green" strokeWidth={2.2} />
-                Vegan
+                <Wheat className="w-3.5 h-3.5 text-brand-green" strokeWidth={2.2} />
+                Dairy free
               </span>
             </div>
           </div>
@@ -229,28 +229,26 @@ export const Hero: React.FC<HeroProps> = ({ isPreloaderFinished }) => {
           {/* Right — bottles + backdrop */}
           <div data-hp="stage" className="lg:col-span-5 relative flex items-center justify-center">
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
-              <div data-hp="arch" className="hb-arch relative w-[84%] max-w-[440px] h-[114%]">
-                <div
-                  className="absolute inset-[10px] pointer-events-none"
-                  style={{ borderRadius: '999px', border: '1px solid rgba(33,29,29,0.12)' }}
-                />
+              <div data-hp="arch" className="hb-arch relative w-[88%] max-w-[440px] h-[112%]">
+                {/* rings stay inside the arch, so no line ever crosses its edge */}
+                <div className="absolute inset-0 rounded-[inherit] overflow-hidden flex items-center justify-center">
+                  <ConcentricRings
+                    size={520}
+                    color="#211D1D"
+                    strokeWidth={1}
+                    rings={5}
+                    opacity={0.1}
+                  />
+                </div>
                 <div className="hb-grain absolute inset-0 rounded-[inherit] opacity-30" />
+                {/* inner hairline: same arch shape, inset evenly on every side */}
+                <div className="hb-arch-line absolute inset-[10px] sm:inset-3 pointer-events-none" />
                 <span
                   data-hp="sun"
-                  className="absolute top-[13%] right-[17%] w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-brand-green"
-                  style={{ boxShadow: 'inset -4px -5px 8px rgba(0,0,0,0.12), 0 0 0 8px rgba(73,188,57,0.16)' }}
+                  className="hidden sm:block absolute top-[21%] right-[7%] w-9 h-9 rounded-full bg-brand-green"
+                  style={{ boxShadow: 'inset -4px -5px 8px rgba(0,0,0,0.12), 0 0 0 6px rgba(73,188,57,0.16)' }}
                 />
               </div>
-            </div>
-
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none -z-0">
-              <ConcentricRings
-                size={520}
-                color="#211D1D"
-                strokeWidth={1}
-                rings={5}
-                opacity={0.14}
-              />
             </div>
 
             <div
@@ -266,12 +264,12 @@ export const Hero: React.FC<HeroProps> = ({ isPreloaderFinished }) => {
               >
                 <div
                   ref={bottleMenRef}
-                  className="w-[6.5rem] sm:w-36 lg:w-36 xl:w-40 -mr-8 sm:-mr-11 z-0 translate-x-3"
+                  className="w-[6.75rem] sm:w-36 lg:w-36 xl:w-40 -mr-4 sm:-mr-11 z-0 sm:translate-x-3"
                 >
                   <Link to="/products/mens-multi" data-cursor="View" className="block" aria-label="View Men's Multi">
                     <BottleImage gender="men" alt="ONCE Men's Multi Bottle" interactive />
-                    <div className="text-left mt-2 -ml-2 sm:-ml-4">
-                      <span className="text-[11px] font-heading font-semibold uppercase tracking-wider text-men whitespace-nowrap">
+                    <div className="relative z-20 text-center mt-2 sm:text-left sm:-ml-4">
+                      <span className="text-[10px] sm:text-[11px] font-heading font-semibold uppercase tracking-wider text-men whitespace-nowrap">
                         Men's Multi
                       </span>
                     </div>
@@ -280,14 +278,14 @@ export const Hero: React.FC<HeroProps> = ({ isPreloaderFinished }) => {
 
                 <div
                   ref={bottleWomenRef}
-                  className="w-[7.5rem] sm:w-[10.5rem] lg:w-[10.5rem] xl:w-48 z-10 -translate-x-3"
+                  className="w-[7.75rem] sm:w-[10.5rem] lg:w-[10.5rem] xl:w-48 z-10 sm:-translate-x-3"
                 >
                   <Link to="/products/womens-multi" data-cursor="View" className="block" aria-label="View Women's Multi">
                     <div ref={womenHitRef}>
                       <BottleImage gender="women" alt="ONCE Women's Multi Bottle" interactive />
                     </div>
-                    <div className="text-center mt-2">
-                      <span className="text-[11px] font-heading font-semibold uppercase tracking-wider text-women">
+                    <div className="relative z-20 text-center mt-2">
+                      <span className="text-[10px] sm:text-[11px] font-heading font-semibold uppercase tracking-wider text-women whitespace-nowrap">
                         Women's Multi
                       </span>
                     </div>

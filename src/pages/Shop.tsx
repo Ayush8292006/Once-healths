@@ -162,7 +162,7 @@ const Shop: React.FC = () => {
             Coming soon on Amazon
           </h3>
           <p className="text-surface/70 text-sm mb-6 leading-relaxed">
-            Every order will be handled through our official Amazon brand store — with Prime delivery, secure checkout and Amazon's return policy. We're launching very soon.
+            Every order will be handled through Amazon — with secure Amazon checkout, Subscribe &amp; Save, and Amazon's delivery and return policies. We're launching very soon.
           </p>
           <AmazonButton url={AMAZON_STORE_URL} label="Visit Amazon Storefront" size="lg" />
         </div>
